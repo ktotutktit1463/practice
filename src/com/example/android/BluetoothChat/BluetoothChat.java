@@ -177,7 +177,7 @@ public class BluetoothChat extends Activity {
 		// Initialize the send button with a listener that for click events
 		mSendButton = (Button) findViewById(R.id.button_send);
 		mSendButton.setOnClickListener(new OnClickListener() {
-		
+
 /*--------------------------------------------------------変更部分----------------------------------------------*/
 			/*sendボタンが押された時の処理
 			 * 画像を転送するためにResourseから画像(apple)の読み込み
@@ -189,10 +189,12 @@ public class BluetoothChat extends Activity {
 			public void onClick(View v) {
 				// Send a message using content of the edit text widget
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				bitmap = 
+				bitmap = BitmapFactory.decodeResource( getResources(), R.drawable.apple);
+				bitmap.compress(CompressFormat.JPEG, 100, bos);
 
-				byte[] _byte = 
-				
+				byte[] _byte = bos.toByteArray();
+				pack.b = _byte;
+				pack.flag = SEND_IMAGE;
 				sendMessage(_byte.toString(), pack);
 /*------------------------------------------------↑↑↑↑↑　ここまで　↑↑↑↑↑------------------------------------------*/
 			}
@@ -244,11 +246,11 @@ public class BluetoothChat extends Activity {
 
 	/**
 	 * Sends a message.
-	 * 
+	 *
 	 * @param message
 	 *            A string of text to send.
 	 */
-	
+
 	/*座標値や画像をメッセージとして送るメソッド
 	 * 画像や座標値を送る際呼ぶ
 	 * */
@@ -302,7 +304,7 @@ public class BluetoothChat extends Activity {
 	}
 
 	// The Handler that gets information back from the BluetoothChatService
-	
+
 /*--------------------------------------------------------変更部分----------------------------------------------*/
 	/*Bluetoothで受信・送信した後の処理
 	 * 座標を画面に表示
@@ -311,7 +313,8 @@ public class BluetoothChat extends Activity {
 	@SuppressLint("HandlerLeak")
 	private final Handler mHandler = new Handler() {
 		private Bitmap image;
-		private View drawView;
+		//private View drawView;
+		private ImageView imageview;
 
 		/* (非 Javadoc)
 		 * @see android.os.Handler#handleMessage(android.os.Message)
@@ -337,7 +340,7 @@ public class BluetoothChat extends Activity {
 					break;
 				}
 				break;
-				
+
 			/*タッチした座標値を出力するところ（転送側）*/
 			case MESSAGE_WRITE:
 				byte[] writeBuf = (byte[]) msg.obj;
@@ -345,19 +348,20 @@ public class BluetoothChat extends Activity {
 				String writeMessage = new String(writeBuf);
 				mConversationArrayAdapter.add("Me:" + writeMessage);
 				break;
-				
+
 			/*画像を出力するところ（転送側）*/
 			case MESSAGE_WRITEIMAGE:
 				byte[] writeImg = (byte[]) msg.obj;
 				// construct a string from the buffer
 
-				
-				
-				
-				
-				
+				if (writeImg != null) {
+					image = BitmapFactory.decodeByteArray(writeImg, 0, writeImg.length);
+				}
+				imageview  = (ImageView)findViewById(R.id.imageView1);
+				imageview.setImageBitmap(image);
+
 				break;
-				
+
 			/*タッチした座標値を出力するところ（受信側）*/
 			case MESSAGE_READ:
 				byte[] readBuf = (byte[]) msg.obj;
@@ -365,19 +369,21 @@ public class BluetoothChat extends Activity {
 				String readMessage = new String(readBuf, 0, msg.arg1);
 				mConversationArrayAdapter.add(mConnectedDeviceName+ ":" + readMessage);
 				break;
-				
+
 			/*画像を出力するところ（受信側）*/
 			case MESSAGE_READIMAGE:
 				byte[] readImg = (byte[]) msg.obj;
 				// construct a string from the valid bytes in the buffer
 
-				
-				
-				
-				
+				if (readImg != null) {
+					image = BitmapFactory.decodeByteArray(readImg,  0, readImg.length);
+				}
+				imageview = (ImageView)findViewById(R.id.imageView1);
+				imageview.setImageBitmap(image);
+
 				break;
-				
-				
+
+
 			case MESSAGE_DEVICE_NAME:
 				// save the connected device's name
 				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
@@ -394,7 +400,7 @@ public class BluetoothChat extends Activity {
 		}
 	};
 /*------------------------------------------------↑↑↑↑↑　ここまで　↑↑↑↑↑------------------------------------------*/
-	
+
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (D)
 			Log.d(TAG, "onActivityResult " + resultCode);
@@ -477,13 +483,14 @@ public class BluetoothChat extends Activity {
 	public boolean onTouchEvent(MotionEvent ev) {
 		float x, y; //タッチしたところのx,y座標の変数
 	    String Message; //取得した座標値を格納する変数・これをBluetoothで転送する
-	    
-		x = 
-		y = 
-		Message = ("TouchEvent: X="　  "Y=" 　 );
 
-		
-		
+		x = ev.getX();
+		y = ev.getY();
+		Message = ("TouchEvent: X="+ x + "Y=" + y);
+
+		pack.touchEV = Message;
+		pack.flag = SEND_TOUCH_EVENT;
+
 		sendMessage(Message , pack);
 		return true;
 	}
